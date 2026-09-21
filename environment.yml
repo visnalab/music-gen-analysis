@@ -33,5 +33,7 @@ dependencies:
   # Music
   - librosa
   - pip:
+    - psychopy
     - torch
+    - pyzmq
 prefix: /home/kross1/music-integration/music-gen-mad/env
