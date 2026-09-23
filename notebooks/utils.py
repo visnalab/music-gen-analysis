@@ -6,6 +6,16 @@ import matplotlib.pyplot as plt
 from transformers import AutoProcessor, AutoFeatureExtractor, MusicgenForConditionalGeneration
 import librosa
 import torchaudio
+import pickle
+import pandas as pd
+
+def save_pickle(filename, data):
+    with open(filename, "wb") as f:
+        pickle.dump(data, f)
+
+def load_pickle(filename):
+    with open(filename, "rb") as f:
+        return pickle.load(f)
 
 def load_process_bulk_audio(paths, sr=16000):
     waveforms = {}
@@ -111,6 +121,21 @@ def compute_mad_dict(attentions_dict):
         seq_length = attn[0].shape[-1]
         mad_dict[path] = compute_mad_by_layer(attn, seq_length)
     return mad_dict
+
+def mad_dict_to_dataframe(mad_dict_layer_avgs):
+    records = []
+
+    for path, mads in mad_dict_layer_avgs.items():
+        genre = path.split("_")[0].split("/")[-1] # Assuming the genre is encoded in the filename like "classical_1.wav"
+        piece_id = path.split("_")[1].replace(".wav", "")  # Extract the piece ID from the filename
+        for layer_idx, mad_val in enumerate(mads):  # mads is now a 1D array of layer averages
+            records.append({
+                "genre": genre,
+                "piece_id": piece_id,
+                "layer": int(layer_idx),
+                "mad": float(mad_val)
+            })
+    return pd.DataFrame(records)
 
 def compute_relative_attention_entropy(attentions, eps=1e-12):
     """
