@@ -2,7 +2,6 @@ from functools import partial
 
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 from transformers import AutoProcessor, AutoFeatureExtractor, MusicgenForConditionalGeneration
 import librosa
 import torchaudio
@@ -153,21 +152,21 @@ def compute_relative_attention_entropy(attentions, eps=1e-12):
     mean_entropy = entropy_per_query.mean(dim=-1) / seq_length # Shape: [layers, heads]
     return mean_entropy
 
-def plot_mad_single(mean_distances_seconds, num_heads, num_layers=24):
-    plt.figure(figsize=(10, 6))
+# def plot_mad_single(mean_distances_seconds, num_heads, num_layers=24):
+#     plt.figure(figsize=(10, 6))
 
-    # for layer in range(num_layers):
-    #     x_coords = [layer] * num_heads
-    #     y_coords = mean_distances_seconds[layer]
-    #     plt.scatter(x_coords, y_coords, color='forestgreen', alpha=0.4, edgecolors='none')
+#     # for layer in range(num_layers):
+#     #     x_coords = [layer] * num_heads
+#     #     y_coords = mean_distances_seconds[layer]
+#     #     plt.scatter(x_coords, y_coords, color='forestgreen', alpha=0.4, edgecolors='none')
 
-    layer_averages_sec = np.mean(mean_distances_seconds, axis=1)
-    plt.plot(range(num_layers), layer_averages_sec, color='darkorange', linewidth=2.5, marker='o', label='Layer Average')
+#     layer_averages_sec = np.mean(mean_distances_seconds, axis=1)
+#     plt.plot(range(num_layers), layer_averages_sec, color='darkorange', linewidth=2.5, marker='o', label='Layer Average')
 
-    plt.title("Mean Attention Distance in Seconds across MusicGen Layers", fontsize=14, fontweight='bold')
-    plt.xlabel("Decoder Layer", fontsize=12)
-    plt.ylabel("Temporal Attention Distance (Seconds)", fontsize=12)
-    plt.grid(True, linestyle="--", alpha=0.5)
-    plt.legend()
-    plt.tight_layout()
-    return plt
+#     plt.title("Mean Attention Distance in Seconds across MusicGen Layers", fontsize=14, fontweight='bold')
+#     plt.xlabel("Decoder Layer", fontsize=12)
+#     plt.ylabel("Temporal Attention Distance (Seconds)", fontsize=12)
+#     plt.grid(True, linestyle="--", alpha=0.5)
+#     plt.legend()
+#     plt.tight_layout()
+#     return plt
