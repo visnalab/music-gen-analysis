@@ -127,7 +127,7 @@ def mad_dict_to_dataframe(mad_dict_layer_avgs):
 
     for path, mads in mad_dict_layer_avgs.items():
         genre = path.split("_")[0].split("/")[-1] # Assuming the genre is encoded in the filename like "classical_1.wav"
-        piece_id = path.split("_")[1].replace(".wav", "")  # Extract the piece ID from the filename
+        piece_id = path.split("/")[-1].replace(".wav", "")  # Extract the piece ID from the filename
         for layer_idx, mad_val in enumerate(mads):  # mads is now a 1D array of layer averages
             records.append({
                 "genre": genre,
