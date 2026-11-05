@@ -2,10 +2,19 @@ from functools import partial
 
 import numpy as np
 import torch
-import matplotlib.pyplot as plt
 from transformers import AutoProcessor, AutoFeatureExtractor, MusicgenForConditionalGeneration
 import librosa
 import torchaudio
+import pickle
+import pandas as pd
+
+def save_pickle(filename, data):
+    with open(filename, "wb") as f:
+        pickle.dump(data, f)
+
+def load_pickle(filename):
+    with open(filename, "rb") as f:
+        return pickle.load(f)
 
 def load_process_bulk_audio(paths, sr=16000):
     waveforms = {}
@@ -67,16 +76,9 @@ def extract_attentions(model, inputs_dict, chunk_size=None):
         for path, inputs in inputs_dict.items():
             audio_features = inputs["input_values"]
             decoder_input_ids = model.audio_encoder.encode(audio_features).audio_codes
-            batch_size = decoder_input_ids.shape[0]
-            dummy_encoder_hidden_states = torch.zeros(
-                batch_size,
-                1,
-                1024,
-                device=decoder_input_ids.device
-            )
             decoder_outputs = model.decoder(
                 input_ids=decoder_input_ids,
-                encoder_hidden_states=dummy_encoder_hidden_states,
+                encoder_hidden_states=None,
                 output_attentions=True,
                 return_dict=True
             )
@@ -119,6 +121,24 @@ def compute_mad_dict(attentions_dict):
         mad_dict[path] = compute_mad_by_layer(attn, seq_length)
     return mad_dict
 
+def mad_dict_to_dataframe(mad_dict_layer_avgs):
+    records = []
+
+    for path, mads in mad_dict_layer_avgs.items():
+        genre = path.split("_")[0].split("/")[-1] # Assuming the genre is encoded in the filename like "classical_1.wav"
+        piece_id = path.split("/")[-1].replace(".wav", "")  # Extract the piece ID from the filename
+        print(mads)
+        print(mads.shape)
+        for layer_idx, mad_val in enumerate(mads):  # mads is now a 1D array of layer averages
+            print(mad_val)
+            records.append({
+                "genre": genre,
+                "piece_id": piece_id,
+                "layer": int(layer_idx),
+                "mad": np.mean(mad_val)
+            })
+    return pd.DataFrame(records)
+
 def compute_relative_attention_entropy(attentions, eps=1e-12):
     """
     attentions shape: [layers, 1, heads, seq_len, seq_len]
@@ -135,21 +155,21 @@ def compute_relative_attention_entropy(attentions, eps=1e-12):
     mean_entropy = entropy_per_query.mean(dim=-1) / seq_length # Shape: [layers, heads]
     return mean_entropy
 
-def plot_mad_single(mean_distances_seconds, num_heads, num_layers=24):
-    plt.figure(figsize=(10, 6))
+# def plot_mad_single(mean_distances_seconds, num_heads, num_layers=24):
+#     plt.figure(figsize=(10, 6))
 
-    # for layer in range(num_layers):
-    #     x_coords = [layer] * num_heads
-    #     y_coords = mean_distances_seconds[layer]
-    #     plt.scatter(x_coords, y_coords, color='forestgreen', alpha=0.4, edgecolors='none')
+#     # for layer in range(num_layers):
+#     #     x_coords = [layer] * num_heads
+#     #     y_coords = mean_distances_seconds[layer]
+#     #     plt.scatter(x_coords, y_coords, color='forestgreen', alpha=0.4, edgecolors='none')
 
-    layer_averages_sec = np.mean(mean_distances_seconds, axis=1)
-    plt.plot(range(num_layers), layer_averages_sec, color='darkorange', linewidth=2.5, marker='o', label='Layer Average')
+#     layer_averages_sec = np.mean(mean_distances_seconds, axis=1)
+#     plt.plot(range(num_layers), layer_averages_sec, color='darkorange', linewidth=2.5, marker='o', label='Layer Average')
 
-    plt.title("Mean Attention Distance in Seconds across MusicGen Layers", fontsize=14, fontweight='bold')
-    plt.xlabel("Decoder Layer", fontsize=12)
-    plt.ylabel("Temporal Attention Distance (Seconds)", fontsize=12)
-    plt.grid(True, linestyle="--", alpha=0.5)
-    plt.legend()
-    plt.tight_layout()
-    return plt
+#     plt.title("Mean Attention Distance in Seconds across MusicGen Layers", fontsize=14, fontweight='bold')
+#     plt.xlabel("Decoder Layer", fontsize=12)
+#     plt.ylabel("Temporal Attention Distance (Seconds)", fontsize=12)
+#     plt.grid(True, linestyle="--", alpha=0.5)
+#     plt.legend()
+#     plt.tight_layout()
+#     return plt
